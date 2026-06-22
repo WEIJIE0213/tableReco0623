@@ -1,33 +1,77 @@
-# tableReco0623 — 社保表格识别（Qwen2.5-VL-3B + ms-swift）
+# tableReco0623
 
-本地开发（Windows，由 Claude 编写代码）+ 服务器训练（4×RTX 4090，SSH 登录运行）。
+社保表格识别项目，目标是基于 Qwen2.5-VL-3B 与 ms-swift 做表格结构识别、宽表视觉增强、以及后续领域自适应训练。
 
-## 协作与同步模型
+## 当前协作方式
 
-- **代码**:通过 Git 在「本地 ↔ GitHub ↔ 服务器」之间同步。小、可版本管理、可复现。
-- **数据**:不走 git，留在服务器本地（`data/` 已被 `.gitignore` 忽略）。需要时用 scp/rsync 传。
-- **Checkpoint/日志**:同样留服务器本地（`checkpoints/`、`runs/` 已忽略）。
+- 本地开发目录：`E:\tableReco0623`
+- GitHub 仓库：`git@github.com:WEIJIE0213/tableReco0623.git`
+- 服务器代码目录：`~/tableReco0623`
+- 服务器配置：4 x RTX 4090 24GB
+- 服务器 conda：`/usr/local/anaconda3/bin/conda`
+- 服务器 GitHub 访问：HTTPS 443 被拦截，SSH 22 可用
 
-## 每轮迭代怎么走
+代码同步优先走 Git：
 
-1. Claude 在本地 `E:\tableReco0623` 改代码。
-2. 你双击 `scripts\sync.bat` → 自动 commit & push 到 GitHub。
-3. 服务器上跑 `bash scripts/update_and_train.sh` → 自动 `git pull` 后开训。
-4. 你把服务器的报错/日志复制回来给 Claude → Claude 改 → 回到第 1 步。
+```text
+本地修改 -> git push 到 GitHub -> 服务器 git pull
+```
 
-## 首次配置
+服务器已验证可以通过 SSH 访问 GitHub，所以 `~/tableReco0623` 是正式 Git clone 目录。`scripts/push_to_server.ps1` 只作为 GitHub SSH 不可用时的备用 scp/tar 同步方案。
 
-见 `SETUP.md`（创建仓库、配置 SSH 密钥、服务器初始化、首次同步自测）。
+## 常用命令
+
+本地提交并推送：
+
+```powershell
+git add -A
+git commit -m "your message"
+git push
+```
+
+服务器拉取并执行训练入口：
+
+```bash
+cd ~/tableReco0623
+bash scripts/update_and_train.sh
+```
+
+服务器首次初始化训练环境：
+
+```bash
+cd ~/tableReco0623
+bash scripts/server_bootstrap.sh
+```
+
+备用同步方案，本地直接上传代码到服务器：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\push_to_server.ps1
+```
+
+## 数据和模型产物
+
+以下内容不进 Git：
+
+- `data/`
+- `checkpoints/`
+- `runs/`
+- `outputs/`
+- `wandb/`
+- 大模型权重和 checkpoint 文件
+
+真实数据、合成数据、训练输出默认留在服务器本地。需要迁移少量样本时再单独用 `scp` 或 `rsync`。
 
 ## 目录
 
-```
-data/              # 数据（不入 git，留服务器）
-configs/           # ms-swift 训练配置
-src/               # 模型 / 数据处理 / 脚本
-scripts/           # 同步与训练脚本
-  sync.bat               # 本地一键 push（Windows）
-  update_and_train.sh    # 服务器一键 pull + 训练
-  server_bootstrap.sh    # 服务器一次性环境初始化
-SETUP.md           # 首次配置步骤
+```text
+configs/                 ms-swift 训练配置
+data/                    数据目录，不进 Git
+scripts/
+  server_bootstrap.sh    服务器环境初始化
+  update_and_train.sh    服务器 git pull + 训练入口
+  sync.bat               本地 commit + push 辅助脚本
+  push_to_server.ps1     备用 scp/tar 同步脚本
+src/                     后续模型、数据处理、评估代码
+SETUP.md                 首次配置和排障记录
 ```
