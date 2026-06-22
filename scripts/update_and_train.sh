@@ -49,7 +49,12 @@ else
   echo "[env] conda not found; continuing with current shell"
 fi
 
-echo "[env] python: $(python --version 2>&1 || true)"
+PYTHON_BIN="$(command -v python || command -v python3 || true)"
+if [ -n "$PYTHON_BIN" ]; then
+  echo "[env] python: $("$PYTHON_BIN" --version 2>&1)"
+else
+  echo "[env] python: not found in current shell"
+fi
 echo "[train] config: $CONFIG"
 
 if [ -f "configs/${CONFIG}.yaml" ]; then
