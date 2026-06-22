@@ -6,7 +6,7 @@
 
 - 本地开发目录：`E:\tableReco0623`
 - GitHub 仓库：`git@github.com:WEIJIE0213/tableReco0623.git`
-- 服务器代码目录：`~/tableReco0623`
+- 服务器代码目录：`/home/ywj/projects/tableReco0623`
 - 服务器配置：4 x RTX 4090 24GB
 - 服务器 conda：`/usr/local/anaconda3/bin/conda`
 - 服务器 GitHub 访问：HTTPS 443 被拦截，SSH 22 可用
@@ -17,7 +17,7 @@
 本地修改 -> git push 到 GitHub -> 服务器 git pull
 ```
 
-服务器已验证可以通过 SSH 访问 GitHub，所以 `~/tableReco0623` 是正式 Git clone 目录。`scripts/push_to_server.ps1` 只作为 GitHub SSH 不可用时的备用 scp/tar 同步方案。
+服务器已验证可以通过 SSH 访问 GitHub，所以 `/home/ywj/projects/tableReco0623` 是正式 Git clone 目录。`/home/ywj/tableReco0623` 保留为指向该目录的软链接，`scripts/push_to_server.ps1` 只作为 GitHub SSH 不可用时的备用 scp/tar 同步方案。
 
 ## 常用命令
 
@@ -32,14 +32,14 @@ git push
 服务器拉取并执行训练入口：
 
 ```bash
-cd ~/tableReco0623
+cd /home/ywj/projects/tableReco0623
 bash scripts/update_and_train.sh
 ```
 
 服务器首次初始化训练环境：
 
 ```bash
-cd ~/tableReco0623
+cd /home/ywj/projects/tableReco0623
 bash scripts/server_bootstrap.sh
 ```
 

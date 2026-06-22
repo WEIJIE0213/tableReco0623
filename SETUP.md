@@ -37,13 +37,19 @@ git@github.com:WEIJIE0213/tableReco0623.git
 服务器：
 
 ```text
-~/tableReco0623
+/home/ywj/projects/tableReco0623
 ```
 
 旧的 scp/tar 临时同步目录已备份为：
 
 ```text
 ~/tableReco0623_scp_backup_before_git
+```
+
+旧路径仍保留为软链接，方便兼容早期命令：
+
+```text
+/home/ywj/tableReco0623 -> /home/ywj/projects/tableReco0623
 ```
 
 ## 本地日常同步
@@ -69,7 +75,7 @@ scripts\sync.bat
 服务器执行：
 
 ```bash
-cd ~/tableReco0623
+cd /home/ywj/projects/tableReco0623
 bash scripts/update_and_train.sh
 ```
 
@@ -100,7 +106,7 @@ bash scripts/update_and_train.sh
 首次安装训练依赖：
 
 ```bash
-cd ~/tableReco0623
+cd /home/ywj/projects/tableReco0623
 bash scripts/server_bootstrap.sh
 ```
 
@@ -121,7 +127,7 @@ cd E:\tableReco0623
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\push_to_server.ps1
 ```
 
-这个方案会把当前 Git HEAD 打包上传到服务器 `~/tableReco0623`，但不会保留服务器目录里的 `.git`。现在 Git SSH 已通，默认不使用它。
+这个方案会把当前 Git HEAD 打包上传到服务器 `/home/ywj/projects/tableReco0623`，但不会保留服务器目录里的 `.git`。现在 Git SSH 已通，默认不使用它。
 
 ## 注意事项
 

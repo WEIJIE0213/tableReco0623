@@ -2,7 +2,7 @@ param(
     [string]$HostName = "10.200.97.195",
     [string]$User = "ywj",
     [int]$Port = 22,
-    [string]$RemoteDir = "~/tableReco0623",
+    [string]$RemoteDir = "/home/ywj/projects/tableReco0623",
     [string]$SshExe = "C:\Windows\System32\OpenSSH\ssh.exe",
     [string]$ScpExe = "C:\Windows\System32\OpenSSH\scp.exe"
 )
