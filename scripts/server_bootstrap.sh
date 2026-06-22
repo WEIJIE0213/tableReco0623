@@ -1,23 +1,79 @@
 #!/usr/bin/env bash
-# 服务器一次性环境初始化。先手动 clone 仓库，再在仓库根目录运行本脚本。
-#   git clone git@github.com:WEIJIE0213/tableReco0623.git
-#   cd tableReco0623 && bash scripts/server_bootstrap.sh
-set -e
+# One-time server bootstrap for the training machine.
+# Works when the server cannot reach GitHub and receives code by scp/tar.
+set -euo pipefail
 
-ENV_NAME="tablereco"
-PY_VER="3.10"
+ENV_NAME="${ENV_NAME:-tablereco}"
+PY_VER="${PY_VER:-3.10}"
 
-echo "[bootstrap] creating conda env: $ENV_NAME (python $PY_VER)"
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda create -y -n "$ENV_NAME" python="$PY_VER" || true
+find_conda() {
+  if command -v conda >/dev/null 2>&1; then
+    command -v conda
+    return 0
+  fi
+
+  for p in \
+    "$HOME/miniconda3/bin/conda" \
+    "$HOME/anaconda3/bin/conda" \
+    "/usr/local/anaconda3/bin/conda" \
+    "/usr/local/miniconda3/bin/conda" \
+    "/opt/conda/bin/conda"; do
+    if [ -x "$p" ]; then
+      echo "$p"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+CONDA_EXE="$(find_conda || true)"
+if [ -z "$CONDA_EXE" ]; then
+  echo "[bootstrap] conda was not found. Install conda or tell Codex to switch this repo to venv."
+  exit 1
+fi
+
+CONDA_BASE="$("$CONDA_EXE" info --base)"
+echo "[bootstrap] conda: $CONDA_EXE"
+echo "[bootstrap] conda base: $CONDA_BASE"
+
+# shellcheck disable=SC1091
+source "$CONDA_BASE/etc/profile.d/conda.sh"
+
+if conda env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
+  echo "[bootstrap] conda env already exists: $ENV_NAME"
+else
+  echo "[bootstrap] creating conda env: $ENV_NAME (python $PY_VER)"
+  conda create -y -n "$ENV_NAME" python="$PY_VER"
+fi
+
 conda activate "$ENV_NAME"
 
-echo "[bootstrap] installing deps..."
-pip install -U pip
-# 训练框架与基础依赖（版本后续在 requirements.txt 固定）
-pip install "ms-swift" "transformers" "accelerate" "deepspeed" "vllm" "qwen-vl-utils" "pillow" "datasets"
+echo "[bootstrap] python: $(python --version 2>&1)"
+echo "[bootstrap] pip: $(python -m pip --version 2>&1)"
 
-echo "[bootstrap] GPU check:"
-python -c "import torch; print('cuda:', torch.cuda.is_available(), 'gpus:', torch.cuda.device_count())"
+echo "[bootstrap] upgrading pip"
+python -m pip install -U pip
 
-echo "[bootstrap] done. 下一步：bash scripts/update_and_train.sh"
+echo "[bootstrap] installing training dependencies"
+python -m pip install \
+  "ms-swift" \
+  "transformers" \
+  "accelerate" \
+  "deepspeed" \
+  "vllm" \
+  "qwen-vl-utils" \
+  "pillow" \
+  "datasets"
+
+echo "[bootstrap] GPU check"
+python - <<'PY'
+try:
+    import torch
+    print("cuda:", torch.cuda.is_available(), "gpus:", torch.cuda.device_count())
+except Exception as exc:
+    print("torch_check_error:", repr(exc))
+PY
+
+echo "[bootstrap] done"
+echo "[bootstrap] next: bash scripts/update_and_train.sh"

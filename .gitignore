@@ -4,6 +4,7 @@ checkpoints/
 runs/
 outputs/
 wandb/
+.sync/
 *.pth
 *.pt
 *.ckpt

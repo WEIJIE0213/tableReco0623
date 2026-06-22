@@ -1,26 +1,59 @@
 #!/usr/bin/env bash
-# 服务器一键：拉取最新代码后开始训练。
-# 用法：bash scripts/update_and_train.sh [配置名]
-set -e
+# Server entrypoint: optionally update code, activate env, then launch training.
+set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-echo "[update] git pull..."
-git pull origin main
+ENV_NAME="${ENV_NAME:-tablereco}"
+CONFIG="${1:-stage1_lora}"
 
-# ===== 按你的环境改这两行 =====
-ENV_NAME="tablereco"          # conda 环境名
-CONFIG="${1:-stage1_lora}"    # 默认跑的配置（对应 configs/ 下的文件）
-# =============================
+find_conda() {
+  if command -v conda >/dev/null 2>&1; then
+    command -v conda
+    return 0
+  fi
 
-# 激活环境（conda 或 venv 二选一）
-source "$(conda info --base)/etc/profile.d/conda.sh" 2>/dev/null && conda activate "$ENV_NAME" || true
+  for p in \
+    "$HOME/miniconda3/bin/conda" \
+    "$HOME/anaconda3/bin/conda" \
+    "/usr/local/anaconda3/bin/conda" \
+    "/usr/local/miniconda3/bin/conda" \
+    "/opt/conda/bin/conda"; do
+    if [ -x "$p" ]; then
+      echo "$p"
+      return 0
+    fi
+  done
 
-echo "[train] launching config: $CONFIG"
-# 占位训练命令，骨架阶段先空跑确认链路；真正训练脚本后续补到 src/train.py
-if [ -f "configs/${CONFIG}.yaml" ]; then
-  echo "[train] (placeholder) would run: swift sft --config configs/${CONFIG}.yaml"
+  return 1
+}
+
+if [ -d ".git" ] && git remote get-url origin >/dev/null 2>&1; then
+  echo "[update] git pull origin main"
+  git pull origin main
 else
-  echo "[train] config configs/${CONFIG}.yaml 还不存在——同步链路已通，等待 Claude 补训练配置。"
+  echo "[update] no git remote checkout on server; assuming code was synced by scp/tar"
 fi
+
+CONDA_EXE="$(find_conda || true)"
+if [ -n "$CONDA_EXE" ]; then
+  CONDA_BASE="$("$CONDA_EXE" info --base)"
+  # shellcheck disable=SC1091
+  source "$CONDA_BASE/etc/profile.d/conda.sh"
+  conda activate "$ENV_NAME"
+else
+  echo "[env] conda not found; continuing with current shell"
+fi
+
+echo "[env] python: $(python --version 2>&1 || true)"
+echo "[train] config: $CONFIG"
+
+if [ -f "configs/${CONFIG}.yaml" ]; then
+  echo "[train] would run: swift sft --config configs/${CONFIG}.yaml"
+  # swift sft --config "configs/${CONFIG}.yaml"
+else
+  echo "[train] config configs/${CONFIG}.yaml does not exist yet"
+  echo "[train] sync path is working; training config will be added in the next phase"
+fi
+
 echo "[done]"
