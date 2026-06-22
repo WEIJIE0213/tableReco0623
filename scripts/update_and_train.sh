@@ -40,7 +40,11 @@ if [ -n "$CONDA_EXE" ]; then
   CONDA_BASE="$("$CONDA_EXE" info --base)"
   # shellcheck disable=SC1091
   source "$CONDA_BASE/etc/profile.d/conda.sh"
-  conda activate "$ENV_NAME"
+  if conda env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
+    conda activate "$ENV_NAME"
+  else
+    echo "[env] conda env '$ENV_NAME' does not exist yet; run bash scripts/server_bootstrap.sh before real training"
+  fi
 else
   echo "[env] conda not found; continuing with current shell"
 fi
