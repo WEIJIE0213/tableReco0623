@@ -1,0 +1,28 @@
+# 数据与产物（不入 git，留服务器本地）
+data/
+checkpoints/
+runs/
+outputs/
+wandb/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.png
+*.jpg
+*.jpeg
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# 编辑器/系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 允许：保留示例少量图（如需）可用 !data/sample/ 显式放行
