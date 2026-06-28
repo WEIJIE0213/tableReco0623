@@ -55,24 +55,33 @@ echo "[bootstrap] pip: $(python -m pip --version 2>&1)"
 echo "[bootstrap] upgrading pip"
 python -m pip install -U pip
 
-echo "[bootstrap] installing training dependencies"
+# 服务器：Driver 570 / CUDA 12.8 -> 用 torch cu124 轮子（PyPI 默认 Linux 轮子即 CUDA 版）。
+# 内容一只需 SFT/LoRA，不装 vllm/deepspeed（留到内容三 GRPO 再单独装），避免版本冲突。
+echo "[bootstrap] installing torch (pinned, CUDA build)"
+python -m pip install "torch==2.5.1" "torchvision==0.20.1"
+
+echo "[bootstrap] installing ms-swift + 训练依赖"
 python -m pip install \
   "ms-swift" \
-  "transformers" \
   "accelerate" \
-  "deepspeed" \
-  "vllm" \
+  "peft" \
   "qwen-vl-utils" \
   "pillow" \
-  "datasets"
+  "datasets" \
+  "tensorboard"
 
-echo "[bootstrap] GPU check"
+echo "[bootstrap] 版本与 GPU 自检"
 python - <<'PY'
-try:
-    import torch
-    print("cuda:", torch.cuda.is_available(), "gpus:", torch.cuda.device_count())
-except Exception as exc:
-    print("torch_check_error:", repr(exc))
+import importlib
+def ver(m):
+    try: return importlib.import_module(m).__version__
+    except Exception as e: return f"<missing: {e.__class__.__name__}>"
+import torch
+print("torch:", torch.__version__, "| torch.cuda:", torch.version.cuda)
+print("cuda available:", torch.cuda.is_available(), "| gpus:", torch.cuda.device_count())
+print("transformers:", ver("transformers"))
+print("swift:", ver("swift"))
+print("peft:", ver("peft"), "| accelerate:", ver("accelerate"), "| datasets:", ver("datasets"))
 PY
 
 echo "[bootstrap] done"
