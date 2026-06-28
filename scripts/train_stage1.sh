@@ -31,7 +31,7 @@ OUT="checkpoints/stage1_lora"
 
 COMMON=(
   --model "$MODEL"
-  --train_type lora
+  --tuner_type lora
   --dataset data/jsonl/train.jsonl
   --val_dataset data/jsonl/val.jsonl
   --torch_dtype bfloat16

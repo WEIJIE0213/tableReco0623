@@ -48,6 +48,8 @@ else
 fi
 
 conda activate "$ENV_NAME"
+# 隔离用户级 ~/.local，确保所有依赖都装进本环境（否则会被 ~/.local 的同名包"骗过"pip 而漏装）
+export PYTHONNOUSERSITE=1
 
 echo "[bootstrap] python: $(python --version 2>&1)"
 echo "[bootstrap] pip: $(python -m pip --version 2>&1)"
@@ -68,7 +70,12 @@ python -m pip install \
   "qwen-vl-utils" \
   "pillow" \
   "datasets" \
-  "tensorboard"
+  "tensorboard" \
+  "pyyaml" \
+  "pandas" \
+  "psutil" \
+  "pycryptodome" \
+  "modelscope"
 
 echo "[bootstrap] 版本与 GPU 自检"
 python - <<'PY'
