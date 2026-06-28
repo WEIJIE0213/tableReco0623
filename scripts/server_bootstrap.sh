@@ -60,7 +60,8 @@ python -m pip install -U pip
 # 服务器：Driver 570 / CUDA 12.8 -> 用 torch cu124 轮子（PyPI 默认 Linux 轮子即 CUDA 版）。
 # 内容一只需 SFT/LoRA，不装 vllm/deepspeed（留到内容三 GRPO 再单独装），避免版本冲突。
 echo "[bootstrap] installing torch (pinned, CUDA build)"
-python -m pip install "torch==2.5.1" "torchvision==0.20.1"
+# ms-swift 4.3.x 需要 torch>=2.6（用到 FSDP2 的 FSDPModule）
+python -m pip install "torch==2.6.0" "torchvision==0.21.0"
 
 echo "[bootstrap] installing ms-swift + 训练依赖"
 python -m pip install \

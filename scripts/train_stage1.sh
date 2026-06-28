@@ -24,7 +24,10 @@ export USE_HF="${USE_HF:-0}"
 export NPROC_PER_NODE="${NPROC_PER_NODE:-4}"
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
 # 限制 Qwen2.5-VL 单图最大像素，防止 3508x2480 高分辨率把显存撑爆(内容二会专门优化这块)
-export MAX_PIXELS="${MAX_PIXELS:-1605632}"   # ≈1.5M px，可按显存上调/下调
+# 602112≈768 视觉token；显存吃紧/共享时可再调小(401408≈512, 200704≈256)
+export MAX_PIXELS="${MAX_PIXELS:-602112}"
+# 缓解显存碎片
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 
 MODEL="${MODEL:-Qwen/Qwen2.5-VL-3B-Instruct}"
 OUT="checkpoints/stage1_lora"
@@ -37,6 +40,7 @@ COMMON=(
   --torch_dtype bfloat16
   --lora_rank 16 --lora_alpha 32 --lora_dropout 0.05
   --freeze_vit true
+  --gradient_checkpointing true
   --per_device_train_batch_size 1
   --per_device_eval_batch_size 1
   --gradient_accumulation_steps 8
