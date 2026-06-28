@@ -15,6 +15,11 @@ CB="$(/usr/local/anaconda3/bin/conda info --base 2>/dev/null || conda info --bas
 # shellcheck disable=SC1091
 source "$CB/etc/profile.d/conda.sh"; conda activate "$ENV_NAME"
 
+# 隔离用户级 ~/.local，避免和 conda 环境版本打架
+export PYTHONNOUSERSITE=1
+# 强制从 ModelScope 下载模型（服务器 github/huggingface 的 443 可能不通，ModelScope 可用）
+export USE_HF="${USE_HF:-0}"
+
 # 4×4090：DDP；如需指定卡用 CUDA_VISIBLE_DEVICES
 export NPROC_PER_NODE="${NPROC_PER_NODE:-4}"
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
