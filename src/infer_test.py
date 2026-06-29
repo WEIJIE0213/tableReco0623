@@ -25,6 +25,8 @@ def main():
     ap.add_argument("--out", default="data/eval/pred_test.jsonl")
     ap.add_argument("--max-new-tokens", type=int, default=4096)
     ap.add_argument("--limit", type=int, default=0, help=">0 时只跑前 N 条（调试）")
+    ap.add_argument("--num-shards", type=int, default=1, help="多卡并行时的分片总数")
+    ap.add_argument("--shard-id", type=int, default=0, help="本进程负责的分片编号(0..num_shards-1)")
     args = ap.parse_args()
     os.environ.setdefault("MAX_PIXELS", "401408")
 
@@ -38,6 +40,9 @@ def main():
     lines = open(args.test, encoding="utf-8").read().splitlines()
     if args.limit:
         lines = lines[:args.limit]
+    if args.num_shards > 1:
+        lines = [ln for k, ln in enumerate(lines) if k % args.num_shards == args.shard_id]
+        print(f"[shard {args.shard_id}/{args.num_shards}] 负责 {len(lines)} 条", flush=True)
 
     n = 0
     with open(args.out, "w", encoding="utf-8") as w:
@@ -62,9 +67,9 @@ def main():
                 pred = ""
                 print(f"[warn] {img} 推理失败: {e!r}")
             w.write(json.dumps({"image": img, "pred": pred, "gold": gold}, ensure_ascii=False) + "\n")
+            w.flush()
             n += 1
-            if n % 20 == 0:
-                print(f"{n}/{len(lines)} done", flush=True)
+            print(f"[{n}/{len(lines)}] {os.path.basename(img)}  pred_len={len(pred)}", flush=True)
     print("saved:", args.out)
 
 if __name__ == "__main__":
