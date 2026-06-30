@@ -66,7 +66,7 @@ def prf(pred_set, gold_set):
 
 def bucket(meta, grid):
     b = meta.get("border", "na")
-    border = "无线/弱线" if b in ("none", "weak", "minimal", "partial") else "有线"
+    border = "无线/弱线" if b in ("none", "weak", "minimal", "partial", "borderless") else "有线"
     depth = "表头≥3层" if meta.get("header_depth", 1) >= 3 else "表头≤2层"
     ncol = grid.get("n_cols", 0)
     width = "宽表(≥12列)" if ncol >= 12 else "非宽表"

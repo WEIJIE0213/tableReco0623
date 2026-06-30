@@ -73,24 +73,23 @@ def stratum_key(label):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data-root", default="data/synth/serif")
+    ap.add_argument("--data-root", nargs="+", default=["data/synth/serif"],
+                    help="一个或多个数据目录(各含 images/ 和 labels/)，会合并后统一划分")
     ap.add_argument("--out", default="data/jsonl")
-    ap.add_argument("--rel-prefix", default=None,
-                    help="写进 jsonl 的图片相对路径前缀，默认 <data-root>/images")
     ap.add_argument("--ratios", default="0.8,0.1,0.1")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
-    rel_prefix = args.rel_prefix or os.path.join(args.data_root, "images")
-    labels_dir = os.path.join(args.data_root, "labels")
-    label_files = sorted(glob.glob(os.path.join(labels_dir, "*.json")))
-    assert label_files, f"未找到标注：{labels_dir}"
-
-    # 分层
+    # 分层（多目录合并，每条样本记住自己所属目录的图片前缀）
     strata = defaultdict(list)
-    for f in label_files:
-        d = json.load(open(f, encoding="utf-8"))
-        strata[stratum_key(d)].append((f, d))
+    for root in args.data_root:
+        rel_prefix = os.path.join(root, "images")
+        label_files = sorted(glob.glob(os.path.join(root, "labels", "*.json")))
+        assert label_files, f"未找到标注：{root}/labels"
+        for f in label_files:
+            d = json.load(open(f, encoding="utf-8"))
+            strata[stratum_key(d)].append((f, d, rel_prefix))
+        print(f"读取 {root}: {len(label_files)} 条")
 
     r_train, r_val, r_test = [float(x) for x in args.ratios.split(",")]
     rng = random.Random(args.seed)
@@ -98,9 +97,9 @@ def main():
     for key, items in strata.items():
         rng.shuffle(items)
         n = len(items); n_tr = int(n * r_train); n_va = int(n * r_val)
-        for f, d in items[:n_tr]: split["train"].append((f, d))
-        for f, d in items[n_tr:n_tr + n_va]: split["val"].append((f, d))
-        for f, d in items[n_tr + n_va:]: split["test"].append((f, d))
+        split["train"] += items[:n_tr]
+        split["val"]   += items[n_tr:n_tr + n_va]
+        split["test"]  += items[n_tr + n_va:]
 
     os.makedirs(args.out, exist_ok=True)
     os.makedirs("data/splits", exist_ok=True)
@@ -109,7 +108,7 @@ def main():
         jpath = os.path.join(args.out, f"{name}.jsonl")
         ids = []
         with open(jpath, "w", encoding="utf-8") as w:
-            for f, d in items:
+            for f, d, rel_prefix in items:
                 stem = os.path.splitext(os.path.basename(f))[0]
                 img = f"{rel_prefix}/{d['image']}" if "image" in d else f"{rel_prefix}/{stem}.png"
                 w.write(json.dumps(to_sample(d, img), ensure_ascii=False) + "\n")
