@@ -22,6 +22,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoProcessor
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True  # 容忍轻度截断的 PNG，避免单张坏图中断训练
 
 from struct_targets import (targets_from_html, td_char_starts,
                             anchor_token_indices, locate_html_base)
@@ -116,7 +118,14 @@ class Collator:
         }
 
     def __call__(self, batch):
-        items = [self._encode(b["image"], b["prompt"], b["html"]) for b in batch]
+        items = []
+        for b in batch:
+            try:
+                items.append(self._encode(b["image"], b["prompt"], b["html"]))
+            except Exception as e:
+                print(f"[skip] 坏样本 {b.get('image')}: {e!r}", flush=True)
+        if not items:
+            return None  # 整批都坏 → 训练循环跳过
         maxlen = max(it["input_ids"].shape[0] for it in items)
         pad_id = self.tok.pad_token_id or 0
         B = len(items)
@@ -208,6 +217,8 @@ def main():
     opt.zero_grad(set_to_none=True)
     while not done:
         for batch in dl:
+            if batch is None:
+                continue
             batch = move(batch, device)
             out = model(**batch)
             loss = out["loss"] / args.grad_accum

@@ -13,6 +13,8 @@ import torch
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from peft import PeftModel
 from qwen_vl_utils import process_vision_info
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True  # 容忍轻度截断的 PNG
 
 DEFAULT_BASE = os.path.expanduser(
     "~/.cache/modelscope/hub/models/Qwen/Qwen2___5-VL-3B-Instruct")
