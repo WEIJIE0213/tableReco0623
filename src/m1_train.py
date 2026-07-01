@@ -54,11 +54,16 @@ class Collator:
         self.proc = proc
         self.tok = proc.tokenizer
         self.tok.padding_side = "right"
+        # 显式控制视觉 token 上限（不依赖 env 是否被 qwen_vl_utils 读取）
+        self.max_pixels = int(os.environ.get("MAX_PIXELS", "401408"))
+        self.min_pixels = int(os.environ.get("MIN_PIXELS", "50176"))
 
     def _encode(self, image, prompt, html):
         from qwen_vl_utils import process_vision_info
         user_msg = [{"role": "user", "content": [
-            {"type": "image", "image": image}, {"type": "text", "text": prompt}]}]
+            {"type": "image", "image": image,
+             "max_pixels": self.max_pixels, "min_pixels": self.min_pixels},
+            {"type": "text", "text": prompt}]}]
         full_msg = user_msg + [{"role": "assistant", "content": html}]
 
         prompt_text = self.proc.apply_chat_template(
