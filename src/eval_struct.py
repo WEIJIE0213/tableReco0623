@@ -88,10 +88,18 @@ def main():
             agg[group][k] += v
 
     rows = [json.loads(x) for x in open(args.pred, encoding="utf-8")]
+    miss = 0
     for r in rows:
-        stem = os.path.splitext(os.path.basename(r["image"]))[0]
-        lp = os.path.join(args.labels_dir, stem + ".json")
-        if not os.path.exists(lp):
+        img = r["image"].replace("\\", "/")
+        stem = os.path.splitext(os.path.basename(img))[0]
+        # 优先从图片路径推导 label（/images/ -> /labels/），自动跨多个数据目录
+        cand = []
+        if "/images/" in img:
+            cand.append(os.path.splitext(img.replace("/images/", "/labels/"))[0] + ".json")
+        cand.append(os.path.join(args.labels_dir, stem + ".json"))
+        lp = next((p for p in cand if os.path.exists(p)), None)
+        if lp is None:
+            miss += 1
             continue
         gold = json.load(open(lp, encoding="utf-8"))
         gcells = gold["cells"]
@@ -123,6 +131,8 @@ def main():
               f"合并spanF1={a['span_f1']/n:.3f} 空格F1={a['empty_f1']/n:.3f} 单元格内容Acc={a['cell_acc']/n:.3f}")
 
     print("=== 细粒度结构指标 ===")
+    if miss:
+        print(f"(注意：{miss} 条样本未找到对应 label，已跳过)")
     show("总体")
     print("--- 按难度分组 ---")
     for g in ["有线", "无线/弱线", "表头≤2层", "表头≥3层", "非宽表", "宽表(≥12列)"]:
