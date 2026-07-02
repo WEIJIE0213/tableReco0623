@@ -28,8 +28,8 @@ if [ "$MODE" = "smoke" ]; then
   OUT="checkpoints/m1/smoke-$(date +%m%d-%H%M)"
   EXTRA=(--max-steps 20 --log-steps 2 --limit 200)
 else
-  OUT="checkpoints/m1/v1-$(date +%m%d-%H%M)"
-  EXTRA=(--epochs 2 --log-steps 10 --save-steps 200)
+  OUT="checkpoints/m1/${TAG:-m1}-$(date +%m%d-%H%M)"
+  EXTRA=(--epochs 2 --log-steps 10 --save-steps 250)
 fi
 
 echo "[m1] MODE=$MODE GPU=$GPU OUT=$OUT MAX_PIXELS=$MAX_PIXELS"

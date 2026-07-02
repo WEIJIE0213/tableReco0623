@@ -167,6 +167,7 @@ def main():
     ap.add_argument("--bsz", type=int, default=1)
     ap.add_argument("--grad-accum", type=int, default=8)
     ap.add_argument("--lr", type=float, default=1e-4)
+    ap.add_argument("--warmup-ratio", type=float, default=0.03)
     ap.add_argument("--lambda-span", type=float, default=0.5)
     ap.add_argument("--lambda-empty", type=float, default=0.5)
     ap.add_argument("--lambda-role", type=float, default=0.0)
@@ -207,7 +208,11 @@ def main():
 
     steps_per_epoch = math.ceil(len(dl) / args.grad_accum)
     total_steps = args.max_steps if args.max_steps > 0 else int(steps_per_epoch * args.epochs)
-    print(f"[m1] 样本 {len(ds)} | 每 epoch 优化步 {steps_per_epoch} | 计划步数 {total_steps}", flush=True)
+    from transformers import get_cosine_schedule_with_warmup
+    warmup = max(1, int(total_steps * args.warmup_ratio))
+    sched = get_cosine_schedule_with_warmup(opt, warmup, total_steps)
+    print(f"[m1] 样本 {len(ds)} | 每 epoch 优化步 {steps_per_epoch} | 计划步数 {total_steps} "
+          f"| warmup {warmup} | lr {args.lr}", flush=True)
 
     step = 0
     micro = 0
@@ -231,6 +236,7 @@ def main():
             if micro % args.grad_accum == 0:
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 opt.step()
+                sched.step()
                 opt.zero_grad(set_to_none=True)
                 step += 1
                 if step % args.log_steps == 0:
