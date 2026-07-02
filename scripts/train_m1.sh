@@ -19,10 +19,11 @@ MODE="${MODE:-smoke}"
 LSPAN="${LSPAN:-0.5}"
 LEMPTY="${LEMPTY:-0.5}"
 
+MAXLEN="${MAXLEN:-0}"
 COMMON=(--train data/jsonl/train.jsonl --val data/jsonl/val.jsonl
         --lambda-span "$LSPAN" --lambda-empty "$LEMPTY"
         --lora-rank 16 --lora-alpha 32 --lora-dropout 0.05
-        --bsz 1 --grad-accum 8 --lr 1e-4 --grad-checkpoint)
+        --bsz 1 --grad-accum 8 --lr 1e-4 --grad-checkpoint --max-len "$MAXLEN")
 
 if [ "$MODE" = "smoke" ]; then
   OUT="checkpoints/m1/smoke-$(date +%m%d-%H%M)"

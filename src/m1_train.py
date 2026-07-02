@@ -52,10 +52,11 @@ class JsonlDS(Dataset):
 
 class Collator:
     """构建模型输入 + 每个 <td 的全局锚点 token 索引 + 结构目标（自校验）。"""
-    def __init__(self, proc, max_new=None):
+    def __init__(self, proc, max_new=None, max_len=0):
         self.proc = proc
         self.tok = proc.tokenizer
         self.tok.padding_side = "right"
+        self.max_len = max_len  # >0 时跳过超长样本，压内存尖峰
         # 显式控制视觉 token 上限（不依赖 env 是否被 qwen_vl_utils 读取）
         self.max_pixels = int(os.environ.get("MAX_PIXELS", "401408"))
         self.min_pixels = int(os.environ.get("MIN_PIXELS", "50176"))
@@ -82,6 +83,8 @@ class Collator:
         plen = penc["input_ids"].shape[1]
 
         input_ids = enc["input_ids"][0]
+        if self.max_len and input_ids.shape[0] > self.max_len:
+            raise ValueError(f"seq_len {input_ids.shape[0]} > max_len {self.max_len}")
         labels = input_ids.clone()
         labels[:plen] = -100
 
@@ -179,6 +182,7 @@ def main():
     ap.add_argument("--save-steps", type=int, default=0, help=">0 时按步存")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--num-workers", type=int, default=2)
+    ap.add_argument("--max-len", type=int, default=0, help=">0 时跳过 token 长度超过该值的样本（压内存尖峰）")
     args = ap.parse_args()
     os.environ.setdefault("MAX_PIXELS", "401408")
 
@@ -199,7 +203,7 @@ def main():
     print(f"[m1] 可训练参数量: {n_train/1e6:.2f}M", flush=True)
 
     ds = JsonlDS(args.train, limit=args.limit)
-    coll = Collator(proc)
+    coll = Collator(proc, max_len=args.max_len)
     dl = DataLoader(ds, batch_size=args.bsz, shuffle=True, collate_fn=coll,
                     num_workers=args.num_workers, drop_last=False)
 
